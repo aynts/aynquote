@@ -2732,10 +2732,15 @@ function render() {
     // Section header
     const htr = document.createElement('tr');
     htr.className = 'section-header';
+    const isIncluded = sec.includeInTotal !== false;
     htr.innerHTML = `
-      <td colspan="9">
+      <td colspan="9" style="display:flex; align-items:center; gap:8px;">
+        <input type="checkbox" title="Include this section in total price" 
+          ${isIncluded ? 'checked' : ''} 
+          onchange="sections[${si}].includeInTotal=this.checked; render()" 
+          style="display:inline-block !important; width:16px; height:16px; cursor:pointer;" />
         <input type="text" value="${esc(sec.name)}" 
-          style="background:transparent;color:#000000;font-weight:700;font-size:13px;width:92%;padding:2px 4px;border:none;outline:none;" 
+          style="background:transparent;color:#000000;font-weight:700;font-size:13px;flex:1;padding:2px 4px;border:none;outline:none;" 
           onchange="sections[${si}].name=this.value" />
       </td>
       <td style="background:#10b981;text-align:center;">
@@ -2745,8 +2750,10 @@ function render() {
     tbody.appendChild(htr);
 
     // Item rows
+    let sectionSubtotal = 0;
     sec.items.forEach((it, ii) => {
       const amount = (it.qty || 0) * (it.price || 0);
+      sectionSubtotal += amount;
       const tr = document.createElement('tr');
       tr.className = 'item-row' + (it.highlight ? ' highlight' : '');
       tr.draggable = true;
@@ -2778,6 +2785,21 @@ function render() {
       tbody.appendChild(tr);
       globalNo++;
     });
+
+    // Section Subtotal row
+    const subTr = document.createElement('tr');
+    subTr.className = 'summary-row section-subtotal-row';
+    subTr.dataset.si = si;
+    subTr.innerHTML = `
+      <td colspan="7" style="text-align:right; font-weight:700; color:#334155; padding-right:12px;">
+        Sub-Total ${isIncluded ? '' : '(Excluded)'}
+      </td>
+      <td style="font-weight:700; color:#0f172a;" class="col-amount">
+        ${isIncluded ? fmtNum(sectionSubtotal) : '<del>'+fmtNum(sectionSubtotal)+'</del>'}
+      </td>
+      <td colspan="2"></td>
+    `;
+    tbody.appendChild(subTr);
 
     // Add-item button row
     const addTr = document.createElement('tr');
@@ -2867,9 +2889,13 @@ function fmtNum(n) { return (n || 0).toLocaleString('en-US'); }
 
 function calcTotal() {
   let t = 0;
-  sections.forEach(s => s.items.forEach(i => {
-    t += (i.qty || 0) * (i.price || 0);
-  }));
+  sections.forEach(s => {
+    if (s.includeInTotal !== false) {
+      s.items.forEach(i => {
+        t += (i.qty || 0) * (i.price || 0);
+      });
+    }
+  });
   return t;
 }
 
@@ -2902,6 +2928,22 @@ function toggleHL(si, ii, checked) {
 
 function updateSummaryTotalsInPlace() {
   const total = calcTotal();
+  
+  // Update section subtotals
+  document.querySelectorAll('.section-subtotal-row').forEach(r => {
+    const si = parseInt(r.dataset.si, 10);
+    if (!isNaN(si) && sections[si]) {
+      let sub = 0;
+      sections[si].items.forEach(it => sub += (it.qty || 0) * (it.price || 0));
+      const valCell = r.querySelector('.col-amount');
+      if (valCell) {
+        const isIncluded = sections[si].includeInTotal !== false;
+        valCell.innerHTML = isIncluded ? fmtNum(sub) : '<del>'+fmtNum(sub)+'</del>';
+      }
+    }
+  });
+
+  // Update total price row
   document.querySelectorAll('.summary-row').forEach(r => {
     const label = r.querySelector('td:nth-child(2)');
     const valCell = r.querySelector('.col-amount');
@@ -3844,14 +3886,17 @@ function generatePdfDoc() {
   let gn = 1;
 
   sections.forEach(sec => {
+    const isIncluded = sec.includeInTotal !== false;
     body.push([{
-      content: sec.name,
+      content: sec.name + (isIncluded ? '' : ' (Excluded from Total)'),
       colSpan: 9,
       styles: { fillColor: [16, 185, 129], textColor: [0, 0, 0], fontStyle: 'bold', fontSize: tblFontSize + 0.3 }
     }]);
 
+    let sectionSubtotal = 0;
     sec.items.forEach(it => {
       const amt = (it.qty || 0) * (it.price || 0);
+      sectionSubtotal += amt;
       const rowStyles = it.highlight ? { fillColor: [254, 240, 138] } : {};
       body.push([
         { content: gn, styles: rowStyles },
@@ -3866,6 +3911,13 @@ function generatePdfDoc() {
       ]);
       gn++;
     });
+
+    body.push([
+      { content: '', colSpan: 6, styles: { fillColor: [248, 250, 252] } },
+      { content: 'Sub-Total' + (isIncluded ? '' : ' (Excluded)'), styles: { fontStyle: 'bold', halign: 'right', fillColor: [248, 250, 252], textColor: isIncluded ? [51, 65, 85] : [148, 163, 184] } },
+      { content: fmtNum(sectionSubtotal), styles: { fontStyle: 'bold', halign: 'right', fillColor: [248, 250, 252], textColor: isIncluded ? [15, 23, 42] : [148, 163, 184] } },
+      { content: '', styles: { fillColor: [248, 250, 252] } }
+    ]);
   });
 
   const total = calcTotal();
