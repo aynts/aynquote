@@ -1,0 +1,21 @@
+{
+  "name": "AYN Quotations & Invoices",
+  "short_name": "AYN Docs",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#e2e8f0",
+  "theme_color": "#10b981",
+  "description": "Aye Yeik Nyo Co., Ltd. Quotation & Invoice Management System",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

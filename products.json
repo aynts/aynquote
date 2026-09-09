@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "name": "Solar Panel 300W",
+    "category": "Solar",
+    "price": 200
+  },
+  {
+    "id": 2,
+    "name": "Inverter 5kW",
+    "category": "Inverter",
+    "price": 1500
+  },
+  {
+    "id": 3,
+    "name": "Battery 10kWh",
+    "category": "Battery",
+    "price": 8000
+  }
+]
