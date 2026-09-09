@@ -3290,11 +3290,6 @@ async function saveToLocalFolder() {
     return;
   }
 
-  const docBundle = getDocumentExportBundle();
-  if (!docBundle) return;
-
-  const { id, type, date, docData, pdfDoc, filename, baseFilename } = docBundle;
-  const docBaseName = baseFilename || (filename ? filename.replace(/\.pdf$/i, '') : id);
 
   const d = date ? new Date(date) : new Date();
   const yyyy = isNaN(d.getFullYear()) ? String(new Date().getFullYear()) : String(d.getFullYear());
